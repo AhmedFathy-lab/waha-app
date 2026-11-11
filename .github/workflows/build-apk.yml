@@ -1,0 +1,45 @@
+name: Build WAHA APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: اختبارات الوحدة
+        run: ./gradlew :app:testDebugUnitTest
+
+      # APK قابل للتثبيت مباشرة (موقّع بمفتاح التصحيح) — يُبنى دائماً
+      - name: Debug APK
+        run: ./gradlew :app:assembleDebug
+
+      # Release موقّع بمفتاحك — يُبنى فقط إذا أضفت الأسرار في إعدادات المستودع
+      - name: Release APK (موقّع)
+        env:
+          KS_B64: ${{ secrets.WAHA_KEYSTORE_B64 }}
+          WAHA_KS_PASS: ${{ secrets.WAHA_KS_PASS }}
+          WAHA_KEY_ALIAS: ${{ secrets.WAHA_KEY_ALIAS }}
+          WAHA_KEY_PASS: ${{ secrets.WAHA_KEY_PASS }}
+        run: |
+          if [ -n "$KS_B64" ]; then
+            echo "$KS_B64" | base64 -d > "$RUNNER_TEMP/waha.jks"
+            export WAHA_KEYSTORE="$RUNNER_TEMP/waha.jks"
+            ./gradlew :app:assembleRelease
+          else
+            echo "لا توجد أسرار توقيع؛ تخطّي Release"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: waha-apk
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk

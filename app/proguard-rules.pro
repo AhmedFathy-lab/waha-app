@@ -1,0 +1,1 @@
+-keep class com.waha.app.data.db.** { *; }
