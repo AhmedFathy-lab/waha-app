@@ -77,7 +77,7 @@ fun WahaNav() {
                 onBookmarks = { nav.navigate(Routes.QURAN) },
             )
         }
-        composable(Routes.PRAYER) { PrayerScreen { nav.popBackStack() } }
+        composable(Routes.PRAYER) { PrayerScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.READER, arguments = listOf(navArgument("surah") { type = NavType.IntType }, navArgument("ayah") { type = NavType.IntType })) { e ->
             ReaderScreen(
                 surahId = e.arguments!!.getInt("surah"), startAyah = e.arguments!!.getInt("ayah"),
